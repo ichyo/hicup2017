@@ -46,6 +46,13 @@ type Visit struct {
 	Mark      int8  `json:"mark"`
 }
 
+// VisitPlace is the type for /user/{id}/visits endpoint
+type VisitPlace struct {
+	Place     string `json:"place"`
+	VisitedAt int64  `json:"visited_at"`
+	Mark      int8   `json:"mark"`
+}
+
 type users struct {
 	Users []*User `json:"users"`
 }
@@ -136,17 +143,17 @@ func (d *InmemoryDB) getVisit(id int32) *Visit {
 	return d.visits[id]
 }
 
-type visitsByTime []*Visit
+type visitsByTime []VisitPlace
 
 func (a visitsByTime) Len() int           { return len(a) }
 func (a visitsByTime) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a visitsByTime) Less(i, j int) bool { return a[i].VisitedAt < a[j].VisitedAt }
 
-func (d *InmemoryDB) queryVisits(userID int32, fromDate int64, toDate int64, country string, toDistance int64) []*Visit {
+func (d *InmemoryDB) queryVisits(userID int32, fromDate int64, toDate int64, country string, toDistance int64) []VisitPlace {
 	d.mux.RLock()
 	defer d.mux.RUnlock()
 
-	visits := make([]*Visit, 0)
+	visits := make([]VisitPlace, 0)
 
 	for _, v := range d.visits {
 		if userID != v.User {
@@ -165,12 +172,47 @@ func (d *InmemoryDB) queryVisits(userID int32, fromDate int64, toDate int64, cou
 		if toDistance <= location.Distance {
 			continue
 		}
-		visits = append(visits, v)
+		visit := VisitPlace{
+			Mark:      v.Mark,
+			VisitedAt: v.VisitedAt,
+			Place:     location.Place,
+		}
+		visits = append(visits, visit)
 	}
 
 	sort.Sort(visitsByTime(visits))
 
 	return visits
+}
+
+func (d *InmemoryDB) queryAverage(locationID int32, fromDate int64, toDate int64, fromAge int64, toAge int64, gender string) float64 {
+	d.mux.RLock()
+	defer d.mux.RUnlock()
+
+	count := int64(0)
+	sum := int64(0)
+
+	for _, v := range d.visits {
+		if locationID != v.Location {
+			continue
+		}
+		if fromDate >= v.VisitedAt {
+			continue
+		}
+		if toDate <= v.VisitedAt {
+			continue
+		}
+		user := db.getUser(v.User)
+		if len(gender) != 0 && gender != user.Gender {
+			continue
+		}
+		// TODO: use fromAge toAge
+
+		count++
+		sum += int64(v.Mark)
+	}
+
+	return float64(sum) / float64(count)
 }
 
 func unmarshalFromFile(f *zip.File, v interface{}) error {
@@ -306,7 +348,7 @@ func getUserVisitsHandler(w http.ResponseWriter, r *http.Request) {
 
 	userID, err := parseInt32(vars["userID"])
 	if err != nil {
-		http.Error(w, "Bad Request", 400)
+		http.NotFound(w, r)
 		return
 	}
 
@@ -322,7 +364,7 @@ func getUserVisitsHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad Request", 400)
 		return
 	}
-	toDate, err := parseInt64OrDefault(query.Get("toDate"), math.MinInt64)
+	toDate, err := parseInt64OrDefault(query.Get("toDate"), math.MaxInt64)
 	if err != nil {
 		http.Error(w, "Bad Request", 400)
 		return
@@ -330,10 +372,61 @@ func getUserVisitsHandler(w http.ResponseWriter, r *http.Request) {
 	country := query.Get("country")
 	toDistance, err := parseInt64OrDefault(query.Get("toDistance"), math.MaxInt64)
 
-	visits := visits{Visits: db.queryVisits(userID, fromDate, toDate, country, toDistance)}
+	visits := db.queryVisits(userID, fromDate, toDate, country, toDistance)
+
+	response := struct {
+		Visits []VisitPlace `json:"visits"`
+	}{Visits: visits}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(visits)
+	json.NewEncoder(w).Encode(response)
+}
+
+func getLocationAverageHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
+	locationID, err := parseInt32(vars["locationID"])
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	location := db.getLocation(locationID)
+	if location == nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	query := r.URL.Query()
+	fromDate, err := parseInt64OrDefault(query.Get("fromDate"), math.MinInt64)
+	if err != nil {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+	toDate, err := parseInt64OrDefault(query.Get("toDate"), math.MaxInt64)
+	if err != nil {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+	fromAge, err := parseInt64OrDefault(query.Get("fromAge"), math.MinInt64)
+	if err != nil {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+	toAge, err := parseInt64OrDefault(query.Get("toAge"), math.MaxInt64)
+	if err != nil {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+	gender := query.Get("gender")
+
+	average := db.queryAverage(locationID, fromDate, toDate, fromAge, toAge, gender)
+	response := struct {
+		Avg string `json:"avg"`
+	}{Avg: fmt.Sprintf("%.5f", average)}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
 
 func main() {
@@ -351,6 +444,7 @@ func main() {
 	r.HandleFunc("/locations/{id}", getLocationHandler).Methods("GET")
 	r.HandleFunc("/visits/{id}", getVisitHandler).Methods("GET")
 	r.HandleFunc("/users/{userID}/visits", getUserVisitsHandler).Methods("GET")
+	r.HandleFunc("/locations/{locationID}/avg", getLocationAverageHandler).Methods("GET")
 
 	http.Handle("/", r)
 
