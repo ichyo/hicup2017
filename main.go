@@ -641,6 +641,9 @@ func main() {
 	}
 
 	r := mux.NewRouter()
+	r.HandleFunc("/users/new", newUserHandler).Methods("GET", "POST")
+	r.HandleFunc("/locations/new", newLocationHandler).Methods("GET", "POST")
+	r.HandleFunc("/visits/new", newVisitHandler).Methods("GET", "POST")
 	r.HandleFunc("/users/{id}", getUserHandler).Methods("GET")
 	r.HandleFunc("/locations/{id}", getLocationHandler).Methods("GET")
 	r.HandleFunc("/visits/{id}", getVisitHandler).Methods("GET")
@@ -649,9 +652,6 @@ func main() {
 	r.HandleFunc("/users/{id}", updateUserHandler).Methods("POST")
 	r.HandleFunc("/locations/{id}", updateLocationHandler).Methods("POST")
 	r.HandleFunc("/visits/{id}", updateVisitHandler).Methods("POST")
-	r.HandleFunc("/users/new", newUserHandler).Methods("POST")
-	r.HandleFunc("/locations/new", newLocationHandler).Methods("POST")
-	r.HandleFunc("/visits/new", newVisitHandler).Methods("POST")
 
 	http.Handle("/", r)
 
