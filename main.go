@@ -19,7 +19,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// User profile
+// User is the type of users.json in data.zip
 type User struct {
 	ID        int32  `json:"id"`
 	Email     string `json:"email"`
@@ -29,7 +29,7 @@ type User struct {
 	BirthDate int64  `json:"birth_date"`
 }
 
-// Location info
+// Location is the type of locations.json in data.zip
 type Location struct {
 	ID       int32  `json:"id"`
 	Place    string `json:"place"`
@@ -38,7 +38,7 @@ type Location struct {
 	Distance int64  `json:"distance"`
 }
 
-// Visit by a specific user to a particular place
+// Visit is the type of visits.json in data.zip
 type Visit struct {
 	ID        int32 `json:"id"`
 	Location  int32 `json:"location"`
@@ -47,23 +47,51 @@ type Visit struct {
 	Mark      int8  `json:"mark"`
 }
 
-// VisitPlace is the type for /user/{id}/visits endpoint
+// Users is the json type in data.zip
+type Users struct {
+	Users []*User `json:"users"`
+}
+
+// Locations is the json type in data.zip
+type Locations struct {
+	Locations []*Location `json:"locations"`
+}
+
+// Visits is the json type in data.zip
+type Visits struct {
+	Visits []*Visit `json:"visits"`
+}
+
+// VisitPlace is the response type of /user/{id}/visits endpoint
 type VisitPlace struct {
 	Place     string `json:"place"`
 	VisitedAt int64  `json:"visited_at"`
 	Mark      int8   `json:"mark"`
 }
 
-type users struct {
-	Users []*User `json:"users"`
+// UserUpdate is the request type of POST /users/{id}
+type UserUpdate struct {
+	Email     string `json:"email"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	Gender    string `json:"gender"`
+	BirthDate int64  `json:"birth_date"`
 }
 
-type locations struct {
-	Locations []*Location `json:"locations"`
+// LocationUpdate is the request type of POST /locations/{id}
+type LocationUpdate struct {
+	Place    string `json:"place"`
+	Country  string `json:"country"`
+	City     string `json:"city"`
+	Distance int64  `json:"distance"`
 }
 
-type visits struct {
-	Visits []*Visit `json:"visits"`
+// VisitUpdate is the request type of POST /visits/{id}
+type VisitUpdate struct {
+	Location  int32 `json:"location"`
+	User      int32 `json:"user"`
+	VisitedAt int64 `json:"visited_at"`
+	Mark      int8  `json:"mark"`
 }
 
 // InmemoryDB stores everything in memory
@@ -264,7 +292,7 @@ func initializeData(dataDir string) error {
 	for _, f := range r.File {
 		log.Println("Loading", f.Name)
 		if strings.HasPrefix(f.Name, "users") {
-			var users users
+			var users Users
 			err := unmarshalFromFile(f, &users)
 			if err != nil {
 				return err
@@ -274,7 +302,7 @@ func initializeData(dataDir string) error {
 			}
 		}
 		if strings.HasPrefix(f.Name, "locations") {
-			var locations locations
+			var locations Locations
 			err := unmarshalFromFile(f, &locations)
 			if err != nil {
 				return err
@@ -284,7 +312,7 @@ func initializeData(dataDir string) error {
 			}
 		}
 		if strings.HasPrefix(f.Name, "visits") {
-			var visits visits
+			var visits Visits
 			err := unmarshalFromFile(f, &visits)
 			if err != nil {
 				return err
@@ -451,6 +479,157 @@ func getLocationAverageHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
+func updateUserHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
+	userID, err := parseInt32(vars["id"])
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	user := db.getUser(userID)
+	if user == nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	var userUpdate UserUpdate
+	err = decoder.Decode(&userUpdate)
+	if err != nil {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+	// TODO: check null in json?
+
+	user.Email = userUpdate.Email
+	user.FirstName = userUpdate.FirstName
+	user.LastName = userUpdate.LastName
+	user.Gender = userUpdate.Gender
+	user.BirthDate = userUpdate.BirthDate
+
+	w.Write([]byte("{}"))
+}
+
+func updateLocationHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
+	locationID, err := parseInt32(vars["id"])
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	location := db.getLocation(locationID)
+	if location == nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	var locationUpdate LocationUpdate
+	err = decoder.Decode(&locationUpdate)
+	if err != nil {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+	// TODO: check null in json?
+
+	location.Place = locationUpdate.Place
+	location.Country = locationUpdate.Country
+	location.City = locationUpdate.City
+	location.Distance = locationUpdate.Distance
+
+	w.Write([]byte("{}"))
+}
+
+func updateVisitHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
+	visitID, err := parseInt32(vars["id"])
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	visit := db.getVisit(visitID)
+	if visit == nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	var visitUpdate VisitUpdate
+	err = decoder.Decode(&visitUpdate)
+	if err != nil {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+	// TODO: check null in json?
+
+	visit.Location = visitUpdate.Location
+	visit.User = visitUpdate.User
+	visit.VisitedAt = visitUpdate.VisitedAt
+	visit.Mark = visitUpdate.Mark
+
+	w.Write([]byte("{}"))
+}
+
+func newUserHandler(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var user User
+	err := decoder.Decode(&user)
+	if err != nil {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+
+	err = db.addUser(&user)
+	if err != nil {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+
+	w.Write([]byte("{}"))
+}
+
+func newLocationHandler(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var location Location
+	err := decoder.Decode(&location)
+	if err != nil {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+
+	err = db.addLocation(&location)
+	if err != nil {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+
+	w.Write([]byte("{}"))
+}
+
+func newVisitHandler(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var visit Visit
+	err := decoder.Decode(&visit)
+	if err != nil {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+
+	err = db.addVisit(&visit)
+	if err != nil {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+
+	w.Write([]byte("{}"))
+}
+
 func main() {
 	port := flag.Int("port", 8080, "port number")
 	dataDir := flag.String("data", "./data/", "data directory for initialization")
@@ -467,6 +646,12 @@ func main() {
 	r.HandleFunc("/visits/{id}", getVisitHandler).Methods("GET")
 	r.HandleFunc("/users/{userID}/visits", getUserVisitsHandler).Methods("GET")
 	r.HandleFunc("/locations/{locationID}/avg", getLocationAverageHandler).Methods("GET")
+	r.HandleFunc("/users/{id}", updateUserHandler).Methods("POST")
+	r.HandleFunc("/locations/{id}", updateLocationHandler).Methods("POST")
+	r.HandleFunc("/visits/{id}", updateVisitHandler).Methods("POST")
+	r.HandleFunc("/users/new", newUserHandler).Methods("POST")
+	r.HandleFunc("/locations/new", newLocationHandler).Methods("POST")
+	r.HandleFunc("/visits/new", newVisitHandler).Methods("POST")
 
 	http.Handle("/", r)
 
