@@ -290,6 +290,9 @@ func (d *InmemoryDB) queryAverage(locationID int32, fromDate int64, toDate int64
 		sum += int64(v.Mark)
 	}
 
+	if count == 0 {
+		return 0
+	}
 	return float64(sum) / float64(count)
 }
 
@@ -512,9 +515,11 @@ func getLocationAverageHandler(w http.ResponseWriter, r *http.Request) {
 	gender := query.Get("gender")
 
 	average := db.queryAverage(locationID, fromDate, toDate, fromAge, toAge, gender)
+	average5Digit := math.Round(average*100000) / 100000
+
 	response := struct {
 		Avg float64 `json:"avg"`
-	}{Avg: average}
+	}{Avg: average5Digit}
 
 	w.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(w).Encode(response)
