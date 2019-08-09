@@ -358,7 +358,10 @@ func getUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(user)
+	err := json.NewEncoder(w).Encode(user)
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 func getLocationHandler(w http.ResponseWriter, r *http.Request) {
@@ -374,7 +377,10 @@ func getLocationHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(location)
+	err := json.NewEncoder(w).Encode(location)
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 func getVisitHandler(w http.ResponseWriter, r *http.Request) {
@@ -390,7 +396,10 @@ func getVisitHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(visit)
+	err := json.NewEncoder(w).Encode(visit)
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 func getUserVisitsHandler(w http.ResponseWriter, r *http.Request) {
@@ -429,7 +438,11 @@ func getUserVisitsHandler(w http.ResponseWriter, r *http.Request) {
 	}{Visits: visits}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+
+	err := json.NewEncoder(w).Encode(response)
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 func getLocationAverageHandler(w http.ResponseWriter, r *http.Request) {
@@ -476,7 +489,10 @@ func getLocationAverageHandler(w http.ResponseWriter, r *http.Request) {
 	}{Avg: fmt.Sprintf("%.5f", average)}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	err := json.NewEncoder(w).Encode(response)
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 func updateUserHandler(w http.ResponseWriter, r *http.Request) {
@@ -509,7 +525,10 @@ func updateUserHandler(w http.ResponseWriter, r *http.Request) {
 	user.Gender = userUpdate.Gender
 	user.BirthDate = userUpdate.BirthDate
 
-	w.Write([]byte("{}"))
+	_, err := w.Write([]byte("{}"))
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 func updateLocationHandler(w http.ResponseWriter, r *http.Request) {
@@ -541,7 +560,10 @@ func updateLocationHandler(w http.ResponseWriter, r *http.Request) {
 	location.City = locationUpdate.City
 	location.Distance = locationUpdate.Distance
 
-	w.Write([]byte("{}"))
+	_, err := w.Write([]byte("{}"))
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 func updateVisitHandler(w http.ResponseWriter, r *http.Request) {
