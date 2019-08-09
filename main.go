@@ -543,15 +543,15 @@ func updateUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	body, err := r.GetBody()
+	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, "Bad Request", 400)
 		return
 	}
-	decoder := json.NewDecoder(body)
+
 	var d map[string]interface{}
-	err = decoder.Decode(&d)
+	err = json.Unmarshal(body, &d)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, "Bad Request", 400)
@@ -564,10 +564,8 @@ func updateUserHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	body, err = r.GetBody()
-	decoder = json.NewDecoder(body)
 	var userUpdate UserUpdate
-	err = decoder.Decode(&userUpdate)
+	err = json.Unmarshal(body, &userUpdate)
 	if err != nil {
 		http.Error(w, "Bad Request", 400)
 		return
@@ -609,15 +607,15 @@ func updateLocationHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	body, err := r.GetBody()
+	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, "Bad Request", 400)
 		return
 	}
-	decoder := json.NewDecoder(body)
+
 	var d map[string]interface{}
-	err = decoder.Decode(&d)
+	err = json.Unmarshal(body, &d)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, "Bad Request", 400)
@@ -630,15 +628,8 @@ func updateLocationHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	body, err = r.GetBody()
-	if err != nil {
-		log.Println(err)
-		http.Error(w, "Bad Request", 400)
-		return
-	}
-	decoder = json.NewDecoder(body)
 	var locationUpdate LocationUpdate
-	err = decoder.Decode(&locationUpdate)
+	err = json.Unmarshal(body, &locationUpdate)
 	if err != nil {
 		http.Error(w, "Bad Request", 400)
 		return
@@ -677,15 +668,15 @@ func updateVisitHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	body, err := r.GetBody()
+	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, "Bad Request", 400)
 		return
 	}
-	decoder := json.NewDecoder(body)
+
 	var d map[string]interface{}
-	err = decoder.Decode(&d)
+	err = json.Unmarshal(body, &d)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, "Bad Request", 400)
@@ -698,15 +689,8 @@ func updateVisitHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	body, err = r.GetBody()
-	if err != nil {
-		log.Println(err)
-		http.Error(w, "Bad Request", 400)
-		return
-	}
-	decoder = json.NewDecoder(body)
 	var visitUpdate VisitUpdate
-	err = decoder.Decode(&visitUpdate)
+	err = json.Unmarshal(body, &visitUpdate)
 	if err != nil {
 		http.Error(w, "Bad Request", 400)
 		return
