@@ -485,8 +485,8 @@ func getLocationAverageHandler(w http.ResponseWriter, r *http.Request) {
 
 	average := db.queryAverage(locationID, fromDate, toDate, fromAge, toAge, gender)
 	response := struct {
-		Avg string `json:"avg"`
-	}{Avg: fmt.Sprintf("%.5f", average)}
+		Avg float64 `json:"avg"`
+	}{Avg: average}
 
 	w.Header().Set("Content-Type", "application/json")
 	err := json.NewEncoder(w).Encode(response)
