@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/gorilla/mux"
 )
@@ -185,6 +186,18 @@ func (d *InmemoryDB) queryVisits(userID int32, fromDate int64, toDate int64, cou
 	return visits
 }
 
+// TODO: int64 is too large for ages
+func computeAge(birth int64) int64 {
+	now := time.Now()
+	birthTime := time.Unix(birth, 0)
+	years := now.Year() - birthTime.Year()
+	if now.Month() < birthTime.Month() ||
+		now.Month() == birthTime.Month() && now.Day() < birthTime.Day() {
+		years--
+	}
+	return int64(years)
+}
+
 func (d *InmemoryDB) queryAverage(locationID int32, fromDate int64, toDate int64, fromAge int64, toAge int64, gender string) float64 {
 	d.mux.RLock()
 	defer d.mux.RUnlock()
@@ -196,6 +209,7 @@ func (d *InmemoryDB) queryAverage(locationID int32, fromDate int64, toDate int64
 		if locationID != v.Location {
 			continue
 		}
+
 		if fromDate >= v.VisitedAt {
 			continue
 		}
@@ -203,10 +217,18 @@ func (d *InmemoryDB) queryAverage(locationID int32, fromDate int64, toDate int64
 			continue
 		}
 		user := db.getUser(v.User)
+
 		if len(gender) != 0 && gender != user.Gender {
 			continue
 		}
-		// TODO: use fromAge toAge
+
+		age := computeAge(user.BirthDate)
+		if fromAge >= age {
+			continue
+		}
+		if toAge <= age {
+			continue
+		}
 
 		count++
 		sum += int64(v.Mark)
