@@ -543,39 +543,50 @@ func updateUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	decoder := json.NewDecoder(r.Body)
+	body, err := r.GetBody()
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+	decoder := json.NewDecoder(body)
+	var d map[string]interface{}
+	err = decoder.Decode(&d)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+	for _, v := range d {
+		if v == nil {
+			http.Error(w, "Bad Request", 400)
+			return
+		}
+	}
+
+	body, err = r.GetBody()
+	decoder = json.NewDecoder(body)
 	var userUpdate UserUpdate
 	err = decoder.Decode(&userUpdate)
 	if err != nil {
 		http.Error(w, "Bad Request", 400)
 		return
 	}
-	if userUpdate.Email == nil {
-		http.Error(w, "Bad Request", 400)
-		return
+	if userUpdate.Email != nil {
+		user.Email = *userUpdate.Email
 	}
-	if userUpdate.FirstName == nil {
-		http.Error(w, "Bad Request", 400)
-		return
+	if userUpdate.FirstName != nil {
+		user.FirstName = *userUpdate.FirstName
 	}
-	if userUpdate.LastName == nil {
-		http.Error(w, "Bad Request", 400)
-		return
+	if userUpdate.LastName != nil {
+		user.LastName = *userUpdate.LastName
 	}
-	if userUpdate.Gender == nil {
-		http.Error(w, "Bad Request", 400)
-		return
+	if userUpdate.Gender != nil {
+		user.Gender = *userUpdate.Gender
 	}
-	if userUpdate.BirthDate == nil {
-		http.Error(w, "Bad Request", 400)
-		return
+	if userUpdate.BirthDate != nil {
+		user.BirthDate = *userUpdate.BirthDate
 	}
-
-	user.Email = *userUpdate.Email
-	user.FirstName = *userUpdate.FirstName
-	user.LastName = *userUpdate.LastName
-	user.Gender = *userUpdate.Gender
-	user.BirthDate = *userUpdate.BirthDate
 
 	_, err = w.Write([]byte("{}"))
 	if err != nil {
@@ -598,34 +609,52 @@ func updateLocationHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	decoder := json.NewDecoder(r.Body)
+	body, err := r.GetBody()
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+	decoder := json.NewDecoder(body)
+	var d map[string]interface{}
+	err = decoder.Decode(&d)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+	for _, v := range d {
+		if v == nil {
+			http.Error(w, "Bad Request", 400)
+			return
+		}
+	}
+
+	body, err = r.GetBody()
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+	decoder = json.NewDecoder(body)
 	var locationUpdate LocationUpdate
 	err = decoder.Decode(&locationUpdate)
 	if err != nil {
 		http.Error(w, "Bad Request", 400)
 		return
 	}
-	if locationUpdate.Place == nil {
-		http.Error(w, "Bad Request", 400)
-		return
+	if locationUpdate.Place != nil {
+		location.Place = *locationUpdate.Place
 	}
-	if locationUpdate.Country == nil {
-		http.Error(w, "Bad Request", 400)
-		return
+	if locationUpdate.Country != nil {
+		location.Country = *locationUpdate.Country
 	}
-	if locationUpdate.City == nil {
-		http.Error(w, "Bad Request", 400)
-		return
+	if locationUpdate.City != nil {
+		location.City = *locationUpdate.City
 	}
-	if locationUpdate.Distance == nil {
-		http.Error(w, "Bad Request", 400)
-		return
+	if locationUpdate.Distance != nil {
+		location.Distance = *locationUpdate.Distance
 	}
-
-	location.Place = *locationUpdate.Place
-	location.Country = *locationUpdate.Country
-	location.City = *locationUpdate.City
-	location.Distance = *locationUpdate.Distance
 
 	_, err = w.Write([]byte("{}"))
 	if err != nil {
@@ -648,34 +677,52 @@ func updateVisitHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	decoder := json.NewDecoder(r.Body)
+	body, err := r.GetBody()
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+	decoder := json.NewDecoder(body)
+	var d map[string]interface{}
+	err = decoder.Decode(&d)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+	for _, v := range d {
+		if v == nil {
+			http.Error(w, "Bad Request", 400)
+			return
+		}
+	}
+
+	body, err = r.GetBody()
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+	decoder = json.NewDecoder(body)
 	var visitUpdate VisitUpdate
 	err = decoder.Decode(&visitUpdate)
 	if err != nil {
 		http.Error(w, "Bad Request", 400)
 		return
 	}
-	if visitUpdate.Location == nil {
-		http.Error(w, "Bad Request", 400)
-		return
+	if visitUpdate.Location != nil {
+		visit.Location = *visitUpdate.Location
 	}
-	if visitUpdate.User == nil {
-		http.Error(w, "Bad Request", 400)
-		return
+	if visitUpdate.User != nil {
+		visit.User = *visitUpdate.User
 	}
-	if visitUpdate.VisitedAt == nil {
-		http.Error(w, "Bad Request", 400)
-		return
+	if visitUpdate.VisitedAt != nil {
+		visit.VisitedAt = *visitUpdate.VisitedAt
 	}
-	if visitUpdate.Mark == nil {
-		http.Error(w, "Bad Request", 400)
-		return
+	if visitUpdate.Mark != nil {
+		visit.Mark = *visitUpdate.Mark
 	}
-
-	visit.Location = *visitUpdate.Location
-	visit.User = *visitUpdate.User
-	visit.VisitedAt = *visitUpdate.VisitedAt
-	visit.Mark = *visitUpdate.Mark
 
 	_, err = w.Write([]byte("{}"))
 	if err != nil {
