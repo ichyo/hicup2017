@@ -358,7 +358,7 @@ func getUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	err := json.NewEncoder(w).Encode(user)
+	err = json.NewEncoder(w).Encode(user)
 	if err != nil {
 		log.Println(err)
 	}
@@ -377,7 +377,7 @@ func getLocationHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	err := json.NewEncoder(w).Encode(location)
+	err = json.NewEncoder(w).Encode(location)
 	if err != nil {
 		log.Println(err)
 	}
@@ -396,7 +396,7 @@ func getVisitHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	err := json.NewEncoder(w).Encode(visit)
+	err = json.NewEncoder(w).Encode(visit)
 	if err != nil {
 		log.Println(err)
 	}
@@ -439,7 +439,7 @@ func getUserVisitsHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 
-	err := json.NewEncoder(w).Encode(response)
+	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
 		log.Println(err)
 	}
@@ -489,7 +489,7 @@ func getLocationAverageHandler(w http.ResponseWriter, r *http.Request) {
 	}{Avg: average}
 
 	w.Header().Set("Content-Type", "application/json")
-	err := json.NewEncoder(w).Encode(response)
+	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
 		log.Println(err)
 	}
@@ -525,7 +525,7 @@ func updateUserHandler(w http.ResponseWriter, r *http.Request) {
 	user.Gender = userUpdate.Gender
 	user.BirthDate = userUpdate.BirthDate
 
-	_, err := w.Write([]byte("{}"))
+	_, err = w.Write([]byte("{}"))
 	if err != nil {
 		log.Println(err)
 	}
@@ -560,7 +560,7 @@ func updateLocationHandler(w http.ResponseWriter, r *http.Request) {
 	location.City = locationUpdate.City
 	location.Distance = locationUpdate.Distance
 
-	_, err := w.Write([]byte("{}"))
+	_, err = w.Write([]byte("{}"))
 	if err != nil {
 		log.Println(err)
 	}
@@ -595,7 +595,10 @@ func updateVisitHandler(w http.ResponseWriter, r *http.Request) {
 	visit.VisitedAt = visitUpdate.VisitedAt
 	visit.Mark = visitUpdate.Mark
 
-	w.Write([]byte("{}"))
+	_, err = w.Write([]byte("{}"))
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 func newUserHandler(w http.ResponseWriter, r *http.Request) {
@@ -613,7 +616,10 @@ func newUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Write([]byte("{}"))
+	_, err = w.Write([]byte("{}"))
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 func newLocationHandler(w http.ResponseWriter, r *http.Request) {
@@ -631,7 +637,10 @@ func newLocationHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Write([]byte("{}"))
+	_, err = w.Write([]byte("{}"))
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 func newVisitHandler(w http.ResponseWriter, r *http.Request) {
@@ -649,7 +658,10 @@ func newVisitHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Write([]byte("{}"))
+	_, err = w.Write([]byte("{}"))
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 func main() {
@@ -663,14 +675,14 @@ func main() {
 	}
 
 	r := mux.NewRouter()
-	r.HandleFunc("/users/new", newUserHandler).Methods("GET", "POST")
-	r.HandleFunc("/locations/new", newLocationHandler).Methods("GET", "POST")
-	r.HandleFunc("/visits/new", newVisitHandler).Methods("GET", "POST")
 	r.HandleFunc("/users/{id}", getUserHandler).Methods("GET")
 	r.HandleFunc("/locations/{id}", getLocationHandler).Methods("GET")
 	r.HandleFunc("/visits/{id}", getVisitHandler).Methods("GET")
 	r.HandleFunc("/users/{userID}/visits", getUserVisitsHandler).Methods("GET")
 	r.HandleFunc("/locations/{locationID}/avg", getLocationAverageHandler).Methods("GET")
+	r.HandleFunc("/users/new", newUserHandler).Methods("POST")
+	r.HandleFunc("/locations/new", newLocationHandler).Methods("POST")
+	r.HandleFunc("/visits/new", newVisitHandler).Methods("POST")
 	r.HandleFunc("/users/{id}", updateUserHandler).Methods("POST")
 	r.HandleFunc("/locations/{id}", updateLocationHandler).Methods("POST")
 	r.HandleFunc("/visits/{id}", updateVisitHandler).Methods("POST")
