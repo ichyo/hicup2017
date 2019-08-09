@@ -71,27 +71,55 @@ type VisitPlace struct {
 
 // UserUpdate is the request type of POST /users/{id}
 type UserUpdate struct {
-	Email     string `json:"email"`
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
-	Gender    string `json:"gender"`
-	BirthDate int64  `json:"birth_date"`
+	Email     *string `json:"email"`
+	FirstName *string `json:"first_name"`
+	LastName  *string `json:"last_name"`
+	Gender    *string `json:"gender"`
+	BirthDate *int64  `json:"birth_date"`
 }
 
 // LocationUpdate is the request type of POST /locations/{id}
 type LocationUpdate struct {
-	Place    string `json:"place"`
-	Country  string `json:"country"`
-	City     string `json:"city"`
-	Distance int64  `json:"distance"`
+	Place    *string `json:"place"`
+	Country  *string `json:"country"`
+	City     *string `json:"city"`
+	Distance *int64  `json:"distance"`
 }
 
 // VisitUpdate is the request type of POST /visits/{id}
 type VisitUpdate struct {
-	Location  int32 `json:"location"`
-	User      int32 `json:"user"`
-	VisitedAt int64 `json:"visited_at"`
-	Mark      int8  `json:"mark"`
+	Location  *int32 `json:"location"`
+	User      *int32 `json:"user"`
+	VisitedAt *int64 `json:"visited_at"`
+	Mark      *int8  `json:"mark"`
+}
+
+// NewUser is the request type of POST /users/new
+type NewUser struct {
+	ID        *int32  `json:"id"`
+	Email     *string `json:"email"`
+	FirstName *string `json:"first_name"`
+	LastName  *string `json:"last_name"`
+	Gender    *string `json:"gender"`
+	BirthDate *int64  `json:"birth_date"`
+}
+
+// NewLocation is the request type of POST /locations/new
+type NewLocation struct {
+	ID       *int32  `json:"id"`
+	Place    *string `json:"place"`
+	Country  *string `json:"country"`
+	City     *string `json:"city"`
+	Distance *int64  `json:"distance"`
+}
+
+// NewVisit is the request type of POST /visits/new
+type NewVisit struct {
+	ID        *int32 `json:"id"`
+	Location  *int32 `json:"location"`
+	User      *int32 `json:"user"`
+	VisitedAt *int64 `json:"visited_at"`
+	Mark      *int8  `json:"mark"`
 }
 
 // InmemoryDB stores everything in memory
@@ -517,13 +545,32 @@ func updateUserHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad Request", 400)
 		return
 	}
-	// TODO: check null in json?
+	if userUpdate.Email == nil {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+	if userUpdate.FirstName == nil {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+	if userUpdate.LastName == nil {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+	if userUpdate.Gender == nil {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+	if userUpdate.BirthDate == nil {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
 
-	user.Email = userUpdate.Email
-	user.FirstName = userUpdate.FirstName
-	user.LastName = userUpdate.LastName
-	user.Gender = userUpdate.Gender
-	user.BirthDate = userUpdate.BirthDate
+	user.Email = *userUpdate.Email
+	user.FirstName = *userUpdate.FirstName
+	user.LastName = *userUpdate.LastName
+	user.Gender = *userUpdate.Gender
+	user.BirthDate = *userUpdate.BirthDate
 
 	_, err = w.Write([]byte("{}"))
 	if err != nil {
@@ -553,12 +600,27 @@ func updateLocationHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad Request", 400)
 		return
 	}
-	// TODO: check null in json?
+	if locationUpdate.Place == nil {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+	if locationUpdate.Country == nil {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+	if locationUpdate.City == nil {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+	if locationUpdate.Distance == nil {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
 
-	location.Place = locationUpdate.Place
-	location.Country = locationUpdate.Country
-	location.City = locationUpdate.City
-	location.Distance = locationUpdate.Distance
+	location.Place = *locationUpdate.Place
+	location.Country = *locationUpdate.Country
+	location.City = *locationUpdate.City
+	location.Distance = *locationUpdate.Distance
 
 	_, err = w.Write([]byte("{}"))
 	if err != nil {
@@ -588,12 +650,27 @@ func updateVisitHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad Request", 400)
 		return
 	}
-	// TODO: check null in json?
+	if visitUpdate.Location == nil {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+	if visitUpdate.User == nil {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+	if visitUpdate.VisitedAt == nil {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+	if visitUpdate.Mark == nil {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
 
-	visit.Location = visitUpdate.Location
-	visit.User = visitUpdate.User
-	visit.VisitedAt = visitUpdate.VisitedAt
-	visit.Mark = visitUpdate.Mark
+	visit.Location = *visitUpdate.Location
+	visit.User = *visitUpdate.User
+	visit.VisitedAt = *visitUpdate.VisitedAt
+	visit.Mark = *visitUpdate.Mark
 
 	_, err = w.Write([]byte("{}"))
 	if err != nil {
@@ -603,11 +680,44 @@ func updateVisitHandler(w http.ResponseWriter, r *http.Request) {
 
 func newUserHandler(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
-	var user User
-	err := decoder.Decode(&user)
+	var newUser NewUser
+	err := decoder.Decode(&newUser)
 	if err != nil {
 		http.Error(w, "Bad Request", 400)
 		return
+	}
+	if newUser.ID == nil {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+	if newUser.Email == nil {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+	if newUser.FirstName == nil {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+	if newUser.LastName == nil {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+	if newUser.Gender == nil {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+	if newUser.BirthDate == nil {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+
+	user := User{
+		ID:        *newUser.ID,
+		Email:     *newUser.Email,
+		FirstName: *newUser.FirstName,
+		LastName:  *newUser.LastName,
+		Gender:    *newUser.Gender,
+		BirthDate: *newUser.BirthDate,
 	}
 
 	err = db.addUser(&user)
@@ -624,11 +734,40 @@ func newUserHandler(w http.ResponseWriter, r *http.Request) {
 
 func newLocationHandler(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
-	var location Location
-	err := decoder.Decode(&location)
+	var newLocation NewLocation
+	err := decoder.Decode(&newLocation)
 	if err != nil {
 		http.Error(w, "Bad Request", 400)
 		return
+	}
+
+	if newLocation.ID == nil {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+	if newLocation.Place == nil {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+	if newLocation.Country == nil {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+	if newLocation.City == nil {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+	if newLocation.Distance == nil {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+
+	location := Location{
+		ID:       *newLocation.ID,
+		Place:    *newLocation.Place,
+		Country:  *newLocation.Country,
+		City:     *newLocation.City,
+		Distance: *newLocation.Distance,
 	}
 
 	err = db.addLocation(&location)
@@ -645,11 +784,39 @@ func newLocationHandler(w http.ResponseWriter, r *http.Request) {
 
 func newVisitHandler(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
-	var visit Visit
-	err := decoder.Decode(&visit)
+	var newVisit NewVisit
+	err := decoder.Decode(&newVisit)
 	if err != nil {
 		http.Error(w, "Bad Request", 400)
 		return
+	}
+	if newVisit.ID == nil {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+	if newVisit.Location == nil {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+	if newVisit.User == nil {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+	if newVisit.VisitedAt == nil {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+	if newVisit.Mark == nil {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+
+	visit := Visit{
+		ID:        *newVisit.ID,
+		Location:  *newVisit.Location,
+		User:      *newVisit.User,
+		VisitedAt: *newVisit.VisitedAt,
+		Mark:      *newVisit.Mark,
 	}
 
 	err = db.addVisit(&visit)
