@@ -157,6 +157,20 @@ func (d *InmemoryDB) addUser(user *User) error {
 	return nil
 }
 
+func (d *InmemoryDB) removeUser(id int32) *User {
+	d.mux.Lock()
+	defer d.mux.Unlock()
+
+	var user *User
+	user, ok := d.users[id]
+	if !ok {
+		return nil
+	}
+
+	delete(d.users, id)
+	return user
+}
+
 func (d *InmemoryDB) addLocation(location *Location) error {
 	d.mux.Lock()
 	defer d.mux.Unlock()
@@ -168,6 +182,20 @@ func (d *InmemoryDB) addLocation(location *Location) error {
 	return nil
 }
 
+func (d *InmemoryDB) removeLocation(id int32) *Location {
+	d.mux.Lock()
+	defer d.mux.Unlock()
+
+	var location *Location
+	location, ok := d.locations[id]
+	if !ok {
+		return nil
+	}
+
+	delete(d.locations, id)
+	return location
+}
+
 func (d *InmemoryDB) addVisit(visit *Visit) error {
 	d.mux.Lock()
 	defer d.mux.Unlock()
@@ -177,6 +205,20 @@ func (d *InmemoryDB) addVisit(visit *Visit) error {
 	}
 	d.visits[visit.ID] = visit
 	return nil
+}
+
+func (d *InmemoryDB) removeVisit(id int32) *Visit {
+	d.mux.Lock()
+	defer d.mux.Unlock()
+
+	var visit *Visit
+	visit, ok := d.visits[id]
+	if !ok {
+		return nil
+	}
+
+	delete(d.visits, id)
+	return visit
 }
 
 func (d *InmemoryDB) getUser(id int32) *User {
@@ -554,12 +596,6 @@ func updateUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := db.getUser(userID)
-	if user == nil {
-		http.NotFound(w, r)
-		return
-	}
-
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		log.Println(err)
@@ -587,6 +623,12 @@ func updateUserHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad Request", 400)
 		return
 	}
+
+	user := db.removeUser(userID)
+	if user == nil {
+		http.NotFound(w, r)
+		return
+	}
 	if userUpdate.Email != nil {
 		user.Email = *userUpdate.Email
 	}
@@ -603,6 +645,13 @@ func updateUserHandler(w http.ResponseWriter, r *http.Request) {
 		user.BirthDate = *userUpdate.BirthDate
 	}
 
+	err = db.addUser(user)
+	if err != nil {
+		log.Println("unreachable error", err)
+		http.Error(w, "Server Error", 500)
+		return
+	}
+
 	_, err = w.Write([]byte("{}"))
 	if err != nil {
 		log.Println(err)
@@ -614,12 +663,6 @@ func updateLocationHandler(w http.ResponseWriter, r *http.Request) {
 
 	locationID, err := parseInt32(vars["id"])
 	if err != nil {
-		http.NotFound(w, r)
-		return
-	}
-
-	location := db.getLocation(locationID)
-	if location == nil {
 		http.NotFound(w, r)
 		return
 	}
@@ -651,6 +694,13 @@ func updateLocationHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad Request", 400)
 		return
 	}
+
+	location := db.removeLocation(locationID)
+	if location == nil {
+		http.NotFound(w, r)
+		return
+	}
+
 	if locationUpdate.Place != nil {
 		location.Place = *locationUpdate.Place
 	}
@@ -664,6 +714,13 @@ func updateLocationHandler(w http.ResponseWriter, r *http.Request) {
 		location.Distance = *locationUpdate.Distance
 	}
 
+	err = db.addLocation(location)
+	if err != nil {
+		log.Println("unreachable error", err)
+		http.Error(w, "Server Error", 500)
+		return
+	}
+
 	_, err = w.Write([]byte("{}"))
 	if err != nil {
 		log.Println(err)
@@ -675,12 +732,6 @@ func updateVisitHandler(w http.ResponseWriter, r *http.Request) {
 
 	visitID, err := parseInt32(vars["id"])
 	if err != nil {
-		http.NotFound(w, r)
-		return
-	}
-
-	visit := db.getVisit(visitID)
-	if visit == nil {
 		http.NotFound(w, r)
 		return
 	}
@@ -712,6 +763,13 @@ func updateVisitHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad Request", 400)
 		return
 	}
+
+	visit := db.removeVisit(visitID)
+	if visit == nil {
+		http.NotFound(w, r)
+		return
+	}
+
 	if visitUpdate.Location != nil {
 		visit.Location = *visitUpdate.Location
 	}
@@ -723,6 +781,13 @@ func updateVisitHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	if visitUpdate.Mark != nil {
 		visit.Mark = *visitUpdate.Mark
+	}
+
+	err = db.addVisit(visit)
+	if err != nil {
+		log.Println("unreachable error", err)
+		http.Error(w, "Server Error", 500)
+		return
 	}
 
 	_, err = w.Write([]byte("{}"))
