@@ -244,7 +244,12 @@ func (d *InmemoryDB) queryVisits(userID int32, fromDate int64, toDate int64, cou
 
 // TODO: int64 is too large for ages
 func computeAge(birth int64) int64 {
-	now := time.Now()
+
+	//now := time.Now()
+	// It seems `now` is computed when generating data
+	// Commit time https://github.com/MailRuChamps/hlcupdocs/commit/5dd3cd07200ae97a5badd242bf891aad3fed6e5b
+	now := time.Date(2018, 12, 15, 20, 33, 0, 0, time.UTC)
+
 	birthTime := time.Unix(birth, 0)
 	years := now.Year() - birthTime.Year()
 	if now.Month() < birthTime.Month() ||
