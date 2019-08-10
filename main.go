@@ -16,8 +16,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/btree"
 	"github.com/gorilla/mux"
 )
+
+// BTreeDegree is a degree for btree
+const BTreeDegree = 32
 
 // User is the type of users.json in data.zip
 type User struct {
@@ -124,10 +128,42 @@ type NewVisit struct {
 
 // InmemoryDB stores everything in memory
 type InmemoryDB struct {
-	mux       sync.RWMutex
-	users     map[int32]*User
-	locations map[int32]*Location
-	visits    map[int32]*Visit
+	mux              sync.RWMutex
+	users            map[int32]*User
+	locations        map[int32]*Location
+	visits           map[int32]*Visit
+	visitsByUser     *btree.BTree
+	visitsByLocation *btree.BTree
+}
+
+// VisitByUserItem is a item of visitsByUser
+type VisitByUserItem struct {
+	userID  int32
+	visitID int32
+}
+
+// Less for btree
+func (a VisitByUserItem) Less(bi btree.Item) bool {
+	b := bi.(VisitByUserItem)
+	if a.userID != b.userID {
+		return a.userID < b.userID
+	}
+	return a.visitID < b.visitID
+}
+
+// VisitByLocationItem is a item of visitsByLocation
+type VisitByLocationItem struct {
+	locationID int32
+	visitID    int32
+}
+
+// Less for btree
+func (a VisitByLocationItem) Less(bi btree.Item) bool {
+	b := bi.(VisitByLocationItem)
+	if a.locationID != b.locationID {
+		return a.locationID < b.locationID
+	}
+	return a.visitID < b.visitID
 }
 
 func newInmemoryDB() *InmemoryDB {
@@ -135,6 +171,8 @@ func newInmemoryDB() *InmemoryDB {
 	db.users = make(map[int32]*User)
 	db.locations = make(map[int32]*Location)
 	db.visits = make(map[int32]*Visit)
+	db.visitsByUser = btree.New(BTreeDegree)
+	db.visitsByLocation = btree.New(BTreeDegree)
 	return &db
 }
 
@@ -204,6 +242,16 @@ func (d *InmemoryDB) addVisit(visit *Visit) error {
 		return errConflictID
 	}
 	d.visits[visit.ID] = visit
+
+	d.visitsByUser.ReplaceOrInsert(VisitByUserItem{
+		userID:  visit.User,
+		visitID: visit.ID,
+	})
+	d.visitsByLocation.ReplaceOrInsert(VisitByLocationItem{
+		locationID: visit.Location,
+		visitID:    visit.ID,
+	})
+
 	return nil
 }
 
@@ -216,6 +264,15 @@ func (d *InmemoryDB) removeVisit(id int32) *Visit {
 	if !ok {
 		return nil
 	}
+
+	d.visitsByUser.Delete(VisitByUserItem{
+		userID:  visit.User,
+		visitID: visit.ID,
+	})
+	d.visitsByLocation.Delete(VisitByLocationItem{
+		locationID: visit.Location,
+		visitID:    visit.ID,
+	})
 
 	delete(d.visits, id)
 	return visit
@@ -254,22 +311,29 @@ func (d *InmemoryDB) queryVisits(userID int32, fromDate int64, toDate int64, cou
 
 	visits := make([]VisitPlace, 0)
 
-	for _, v := range d.visits {
-		if userID != v.User {
-			continue
-		}
+	lb := VisitByUserItem{
+		userID:  userID,
+		visitID: math.MinInt32,
+	}
+	ub := VisitByUserItem{
+		userID:  userID,
+		visitID: math.MaxInt32,
+	}
+	db.visitsByUser.AscendRange(lb, ub, func(item btree.Item) bool {
+		visitID := item.(VisitByUserItem).visitID
+		v := db.getVisit(visitID)
 		if fromDate >= v.VisitedAt {
-			continue
+			return true
 		}
 		if toDate <= v.VisitedAt {
-			continue
+			return true
 		}
 		location := db.getLocation(v.Location)
 		if len(country) != 0 && country != location.Country {
-			continue
+			return true
 		}
 		if toDistance <= location.Distance {
-			continue
+			return true
 		}
 		visit := VisitPlace{
 			Mark:      v.Mark,
@@ -277,7 +341,8 @@ func (d *InmemoryDB) queryVisits(userID int32, fromDate int64, toDate int64, cou
 			Place:     location.Place,
 		}
 		visits = append(visits, visit)
-	}
+		return true
+	})
 
 	sort.Sort(visitsByTime(visits))
 
@@ -307,34 +372,42 @@ func (d *InmemoryDB) queryAverage(locationID int32, fromDate int64, toDate int64
 	count := int64(0)
 	sum := int64(0)
 
-	for _, v := range d.visits {
-		if locationID != v.Location {
-			continue
-		}
+	lb := VisitByLocationItem{
+		locationID: locationID,
+		visitID:    math.MinInt32,
+	}
+	ub := VisitByLocationItem{
+		locationID: locationID,
+		visitID:    math.MaxInt32,
+	}
+	db.visitsByUser.AscendRange(lb, ub, func(item btree.Item) bool {
+		visitID := item.(VisitByLocationItem).visitID
+		v := db.getVisit(visitID)
 
 		if fromDate >= v.VisitedAt {
-			continue
+			return true
 		}
 		if toDate <= v.VisitedAt {
-			continue
+			return true
 		}
 		user := db.getUser(v.User)
 
 		if len(gender) != 0 && gender != user.Gender {
-			continue
+			return true
 		}
 
 		age := computeAge(user.BirthDate)
 		if fromAge > age {
-			continue
+			return true
 		}
 		if toAge <= age {
-			continue
+			return true
 		}
 
 		count++
 		sum += int64(v.Mark)
-	}
+		return true
+	})
 
 	if count == 0 {
 		return 0
