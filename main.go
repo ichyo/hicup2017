@@ -513,6 +513,10 @@ func getLocationAverageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	gender := query.Get("gender")
+	if len(gender) > 1 {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
 
 	average := db.queryAverage(locationID, fromDate, toDate, fromAge, toAge, gender)
 	average5Digit := math.Round(average*100000) / 100000
