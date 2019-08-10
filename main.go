@@ -394,6 +394,7 @@ func getUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Transfer-Encoding", "identity")
 	err = json.NewEncoder(w).Encode(user)
 	if err != nil {
 		log.Println(err)
@@ -413,6 +414,7 @@ func getLocationHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Transfer-Encoding", "identity")
 	err = json.NewEncoder(w).Encode(location)
 	if err != nil {
 		log.Println(err)
@@ -432,6 +434,7 @@ func getVisitHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Transfer-Encoding", "identity")
 	err = json.NewEncoder(w).Encode(visit)
 	if err != nil {
 		log.Println(err)
@@ -474,6 +477,7 @@ func getUserVisitsHandler(w http.ResponseWriter, r *http.Request) {
 	}{Visits: visits}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Transfer-Encoding", "identity")
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
@@ -531,6 +535,7 @@ func getLocationAverageHandler(w http.ResponseWriter, r *http.Request) {
 	}{Avg: average5Digit}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Transfer-Encoding", "identity")
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
 		log.Println(err)
