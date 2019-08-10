@@ -380,7 +380,7 @@ func (d *InmemoryDB) queryAverage(locationID int32, fromDate int64, toDate int64
 		locationID: locationID,
 		visitID:    math.MaxInt32,
 	}
-	db.visitsByUser.AscendRange(lb, ub, func(item btree.Item) bool {
+	db.visitsByLocation.AscendRange(lb, ub, func(item btree.Item) bool {
 		visitID := item.(VisitByLocationItem).visitID
 		v := db.getVisit(visitID)
 
