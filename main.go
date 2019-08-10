@@ -283,7 +283,7 @@ func (d *InmemoryDB) queryAverage(locationID int32, fromDate int64, toDate int64
 		}
 
 		age := computeAge(user.BirthDate)
-		if fromAge >= age {
+		if fromAge > age {
 			continue
 		}
 		if toAge <= age {
